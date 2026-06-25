@@ -52,8 +52,10 @@ fun App() {
             )
         }
         is Screen.Study -> {
+            val deck = repository.getDeckById( screen.deckId )
             StudyScreen(
                 deckId = screen.deckId,
+                deckName = deck?.name ?: "Unknown Deck",
                 flashcardRepository = flashcardRepository,
                 onBack = {
                     backStack.safePop()

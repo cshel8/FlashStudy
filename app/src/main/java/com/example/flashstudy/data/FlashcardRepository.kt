@@ -23,4 +23,17 @@ class FakeFlashcardRepository {
         val newId = ( cards.maxOfOrNull { it.id } ?: 0 ) + 1
         cards.add( Flashcard( newId, deckId, question, answer ))
     }
+    fun updateCard( cardId: Int, newQuestion: String, newAnswer: String ) {
+        val index = cards.indexOfFirst { it.id == cardId }
+        if (index != -1 ) {
+            val oldCard = cards[ index ]
+            cards[ index ] = oldCard.copy(
+                question = newQuestion,
+                answer = newAnswer
+            )
+        }
+    }
+    fun deleteCard( cardId: Int ) {
+        cards.removeAll { it.id == cardId }
+    }
 }

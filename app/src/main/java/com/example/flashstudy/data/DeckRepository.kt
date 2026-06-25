@@ -10,6 +10,7 @@ interface DeckRepository {
     fun getDecks(): List<Deck>
     fun getDeckById( id: Int ): Deck?
     fun addDeck( name: String )
+    fun deleteDeck( deckId: Int )
 }
 
 class FakeDeckRepository : DeckRepository {
@@ -25,5 +26,9 @@ class FakeDeckRepository : DeckRepository {
     override fun addDeck( name: String ) {
         val newId = ( decks.maxOfOrNull { it.id } ?: 0 ) + 1
         decks.add( Deck( newId, name ))
+    }
+
+    override fun deleteDeck(deckId: Int) {
+        decks.removeAll { it.id == deckId }
     }
 }

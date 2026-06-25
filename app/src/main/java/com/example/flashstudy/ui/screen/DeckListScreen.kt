@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.flashstudy.ui.components.ConfirmDeleteDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -25,6 +31,7 @@ fun DeckListScreen(
     onAddDeck: () -> Unit
 ) {
     val decks = repository.getDecks()
+    var deletingDeckId by remember { mutableStateOf<Int?>( null ) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -35,7 +42,7 @@ fun DeckListScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Deck List Screen",
+                text = "FlashStudy",
                 modifier = Modifier.align( Alignment.Center )
             )
             IconButton(
@@ -52,13 +59,41 @@ fun DeckListScreen(
             modifier = Modifier.padding( top = 16.dp )
         ) {
             decks.forEach { deck ->
-                Button(
-                    onClick = { onDeckClick( deck.id ) },
+                Box(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(deck.name)
+                    Button(
+                        onClick = { onDeckClick( deck.id ) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(deck.name)
+                    }
+                    IconButton(
+                        onClick = {
+                            deletingDeckId = deck.id
+                        },
+                        modifier = Modifier.align( Alignment.CenterEnd )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Deck"
+                        )
+                    }
                 }
             }
         }
+    }
+    if (deletingDeckId != null ) {
+        ConfirmDeleteDialog(
+            title = "Delete Deck",
+            message = "Are you sure you want to delete this deck?",
+            onDismiss = {
+                deletingDeckId = null
+            },
+            onConfirm = {
+                repository.deleteDeck( deletingDeckId!! )
+                deletingDeckId = null
+            }
+        )
     }
 }
