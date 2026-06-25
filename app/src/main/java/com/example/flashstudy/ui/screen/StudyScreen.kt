@@ -131,7 +131,7 @@ fun StudyScreen(
                             text = if ( rotation <= 90f ) card.question else card.answer,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.graphicsLayer {
-                                rotationY = if ( rotation <= 90f ) 0f else 180f
+                                rotationY = if ( isFlipped ) 180f else 0f
                             }
                         )
                     }
@@ -153,7 +153,7 @@ fun StudyScreen(
                 Button(
                     onClick = {
                         index = if ( index > 0 ) index - 1 else cards.lastIndex
-                            isFlipped = false
+                        isFlipped = false
                         }
                 ) {
                     Text( "Previous" )
@@ -161,7 +161,7 @@ fun StudyScreen(
                 Button(
                     onClick = {
                         index = if ( index < cards.lastIndex ) index + 1 else 0
-                            isFlipped = false
+                        isFlipped = false
                     }
                 ) {
                     Text( "Next" )
