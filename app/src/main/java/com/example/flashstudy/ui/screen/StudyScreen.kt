@@ -1,6 +1,10 @@
 package com.example.flashstudy.ui.screen
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
@@ -19,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SearchBarDefaults.colors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,22 +52,24 @@ fun StudyScreen(
         return
     }
     var index by remember { mutableStateOf( 0 ) }
-    var isFlipped by remember { mutableStateOf( false )}
+    var isFlipped by remember { mutableStateOf( false ) }
+    var slideDirection by remember { mutableStateOf( 1 ) }
+    var pendingIndex by remember { mutableStateOf<Int?>( null )}
     val rotation by animateFloatAsState(
         targetValue = if ( isFlipped ) 180f else 0f,
-        animationSpec = tween( durationMillis = 400 ),          //normal
-//        animationSpec = spring(                               //bouncy
-//            dampingRatio = 0.5f,
-//            stiffness = 200f
-//        ),
+        animationSpec = tween( durationMillis = 400 ),
         label = "cardFlip"
     )
     LaunchedEffect( deckId ) {
         index = 0
         isFlipped = false
     }
-    val safeIndex = index.coerceIn( 0, cards.lastIndex )
-    val card = cards[ safeIndex ]
+    LaunchedEffect( rotation ){
+        if ( rotation == 0f && pendingIndex != null ) {
+            index = pendingIndex!!
+            pendingIndex = null
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -106,34 +113,52 @@ fun StudyScreen(
         ) {
             Column( horizontalAlignment = Alignment.CenterHorizontally ) {
                 Text("Card ${index + 1} of ${cards.size}")
-                Card(
-                    modifier = Modifier
-                        .padding( 16.dp )
-                        .fillMaxWidth()
-                        .graphicsLayer {
-                            rotationY = rotation
-                            cameraDistance = 8 * density
+                AnimatedContent(
+                    targetState = index,
+                    transitionSpec = {
+                        if ( slideDirection > 0 ) {
+                            slideInHorizontally { it } togetherWith
+                            slideOutHorizontally { -it }
+                        } else {
+                            slideInHorizontally { -it } togetherWith
+                            slideOutHorizontally { it }
                         }
-                        .clickable { isFlipped = !isFlipped },
-                    elevation = CardDefaults.cardElevation( defaultElevation = 8.dp ),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Box(
+                    },
+                    label = "cardTransition"
+                ) { currentIndex ->
+                    val currentCard = cards[currentIndex]
+                    Card(
                         modifier = Modifier
-                            .padding( 48.dp )
-                            .height( 200.dp )
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if ( isFlipped ) card.answer else card.question,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.graphicsLayer {
-                                rotationY = if ( isFlipped ) 180f else 0f
+                            .padding(16.dp)
+                            .fillMaxWidth()
+                            .graphicsLayer {
+                                rotationY = rotation
+                                cameraDistance = 8 * density
                             }
+                            .clickable { isFlipped = !isFlipped },
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(48.dp)
+                                .height(200.dp)
+                                .fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (isFlipped)
+                                    currentCard.answer
+                                else
+                                    currentCard.question,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.graphicsLayer {
+                                    rotationY = if (isFlipped) 180f else 0f
+                                }
+                            )
+                        }
                     }
                 }
                 Button(
@@ -152,16 +177,30 @@ fun StudyScreen(
             ) {
                 Button(
                     onClick = {
-                        index = if ( index > 0 ) index - 1 else cards.lastIndex
-                        isFlipped = false
+                        slideDirection = -1
+                        if ( isFlipped ) {
+                            pendingIndex =
+                                if (index > 0) index - 1 else cards.lastIndex
+                            isFlipped = false
+                        } else {
+                            index =
+                                if ( index > 0 ) index - 1 else cards.lastIndex
                         }
+                    }
                 ) {
                     Text( "Previous" )
                 }
                 Button(
                     onClick = {
-                        index = if ( index < cards.lastIndex ) index + 1 else 0
-                        isFlipped = false
+                        slideDirection = 1
+                        if ( isFlipped ) {
+                            pendingIndex =
+                                if (index < cards.lastIndex) index + 1 else 0
+                            isFlipped = false
+                        } else {
+                            index =
+                                if ( index < cards.lastIndex ) index + 1 else 0
+                        }
                     }
                 ) {
                     Text( "Next" )
