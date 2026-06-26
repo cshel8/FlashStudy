@@ -1,6 +1,8 @@
 package com.example.flashstudy.ui.screen
 
 import android.app.AlertDialog
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +16,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -90,35 +94,49 @@ fun DeckListScreen(
                 Box(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = { onDeckClick( deck.id ) },
-                        modifier = Modifier.fillMaxWidth()
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding( vertical = 6.dp )
+                            .clickable {
+                                onDeckClick( deck.id )
+                            },
+                        elevation = CardDefaults.cardElevation( defaultElevation = 4.dp )
                     ) {
-                        Text(deck.name)
-                    }
-                    Row(
-                        modifier = Modifier.align( Alignment.CenterEnd )
-                    ) {
-                        IconButton(
-                            onClick = {
-                                editingDeckId = deck.id
-                                editDeckName = deck.name
-                            }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding( 16.dp ),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Deck"
+                            Text(
+                                text = deck.name,
+                                modifier = Modifier.weight(1f)
                             )
-                        }
-                        IconButton(
-                            onClick = {
-                                deletingDeckId = deck.id
+                            Row {
+                                IconButton(
+                                    onClick = {
+                                        editingDeckId = deck.id
+                                        editDeckName = deck.name
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit Deck"
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        deletingDeckId = deck.id
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete Deck"
+                                    )
+                                }
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete Deck"
-                            )
                         }
                     }
                 }
