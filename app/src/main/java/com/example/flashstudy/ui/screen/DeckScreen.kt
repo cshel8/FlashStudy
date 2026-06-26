@@ -1,6 +1,5 @@
 package com.example.flashstudy.ui.screen
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -29,12 +27,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.unit.dp
 import com.example.flashstudy.data.DeckRepository
-import com.example.flashstudy.data.FakeDeckRepository
 import com.example.flashstudy.data.FakeFlashcardRepository
 import com.example.flashstudy.ui.components.ConfirmDeleteDialog
+import com.example.flashstudy.ui.components.LimitCounter
+import com.example.flashstudy.ui.components.LimitDialog
 
 @Composable
 fun DeckScreen(
@@ -46,6 +44,7 @@ fun DeckScreen(
 ) {
     val deck = repository.getDeckById(deckId)
     val cards = flashcardRepository.getCardsForDeck( deckId )
+    val cardLimitReached = cards.size >= 25
     var showAddCardDialog by remember { mutableStateOf( false )}
     var newQuestion by remember { mutableStateOf( "")}
     var newAnswer by remember { mutableStateOf( "" )}
@@ -53,6 +52,7 @@ fun DeckScreen(
     var editQuestion by remember { mutableStateOf( "" )}
     var editAnswer by remember { mutableStateOf( "" )}
     var deletingCardId by remember { mutableStateOf<Int?>( null )}
+    var showLimitError by remember { mutableStateOf( false ) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -68,20 +68,32 @@ fun DeckScreen(
             ) {
                 Text("Back")
             }
-            if (deck != null) {
-                Text(
-                    text = deck.name,
-                    modifier = Modifier.align(Alignment.Center))
-            } else {
-                Text(
-                    text = "Deck not found",
-                    modifier = Modifier.align(Alignment.Center))
+            Column(
+                modifier = Modifier.align( Alignment.Center ),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (deck != null) {
+                    Text(
+                        text = deck.name
+                    )
+                    LimitCounter(
+                        current = cards.size,
+                        limit = 25,
+                        label = "Flashcards"
+                    )
+                } else {
+                    Text("Deck not found")
+                }
             }
             IconButton(
                 onClick = {
-                    showAddCardDialog = true
+                    if ( cardLimitReached ) {
+                        showLimitError = true
+                    } else {
+                        showAddCardDialog = true
+                    }
                 },
-                modifier = Modifier.align( Alignment.CenterEnd )
+                modifier = Modifier.align(Alignment.CenterEnd)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -261,6 +273,15 @@ fun DeckScreen(
             onConfirm = {
                 flashcardRepository.deleteCard( deletingCardId!! )
                 deletingCardId = null
+            }
+        )
+    }
+    if ( showLimitError ) {
+        LimitDialog(
+            title = "Flashcard limit reached",
+            message = "You can only have up to 25 flashcards in a deck.",
+            onDismiss = {
+                showLimitError = false
             }
         )
     }
