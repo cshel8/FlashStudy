@@ -128,7 +128,7 @@ fun StudyScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if ( rotation <= 90f ) card.question else card.answer,
+                            text = if ( isFlipped ) card.answer else card.question,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.graphicsLayer {
                                 rotationY = if ( isFlipped ) 180f else 0f
