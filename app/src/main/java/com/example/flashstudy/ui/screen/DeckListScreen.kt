@@ -1,6 +1,5 @@
 package com.example.flashstudy.ui.screen
 
-import android.app.AlertDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,11 +9,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,14 +38,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.flashstudy.data.DeckRepository
+import com.example.flashstudy.data.FakeFlashcardRepository
 import com.example.flashstudy.ui.components.LimitCounter
 import com.example.flashstudy.ui.components.LimitDialog
 
 @Composable
 fun DeckListScreen(
     repository: DeckRepository,
+    flashcardRepository: FakeFlashcardRepository,
     onDeckClick: (Int) -> Unit,
-    onAddDeck: () -> Unit
+    onAddDeck: () -> Unit,
+    onStudyClick: (Int) -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     val decks = repository.getDecks()
     val deckLimitReached = decks.size >= 10
@@ -56,35 +65,49 @@ fun DeckListScreen(
             .statusBarsPadding()
             .padding(16.dp)
     ) {
-        Box(
+        Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
-                modifier = Modifier.align( Alignment.Center ),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Box(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("FlashStudy")
-                LimitCounter(
-                    current = decks.size,
-                    limit = 10,
-                    label = "Decks"
+                Text(
+                    text = "FlashStudy",
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.align(Alignment.Center )
                 )
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.align( Alignment.CenterEnd )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings"
+                    )
+                }
             }
-            IconButton(
-                onClick = {
-                    if( deckLimitReached ) {
-                        showLimitError = true
-                    } else {
-                        showAddDeckDialog = true
-                        newDeckName = ""
-                    }
-                },
-                modifier = Modifier.align( Alignment.CenterEnd )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding( top = 24.dp ),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Deck"
+                    imageVector = Icons.Default.Layers,
+                    contentDescription = "Decks",
+                    modifier = Modifier.padding( end = 16.dp )
                 )
+                Column {
+                    Text(
+                        text = "My Decks",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    LimitCounter(
+                        current = decks.size,
+                        limit = 10,
+                        label = "Decks"
+                    )
+                }
             }
         }
         Column(
@@ -94,28 +117,53 @@ fun DeckListScreen(
                 Box(
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    val cardCount = flashcardRepository.getCardsForDeck(deck.id).size
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding( vertical = 6.dp )
-                            .clickable {
-                                onDeckClick( deck.id )
-                            },
-                        elevation = CardDefaults.cardElevation( defaultElevation = 4.dp )
+                            .padding(vertical = 6.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding( 16.dp ),
+                                .padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = deck.name,
+                            Column(
                                 modifier = Modifier.weight(1f)
-                            )
-                            Row {
-                                IconButton(
+                            ) {
+                                Text(
+                                    text = deck.name,
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                                Text(
+                                    text = "$cardCount flashcards",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Row(
+                                    modifier = Modifier.padding( top = 8.dp ),
+                                    horizontalArrangement = Arrangement.spacedBy( 8.dp )
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            onDeckClick( deck.id )
+                                        }
+                                    ) {
+                                        Text( "Manage" )
+                                    }
+                                    Button(
+                                        onClick = {
+                                            onStudyClick(deck.id)
+                                    }
+                                ) {
+                                    Text("Study")
+                                }
+                            }
+                        }
+                        Row {
+                            IconButton(
                                     onClick = {
                                         editingDeckId = deck.id
                                         editDeckName = deck.name
@@ -139,6 +187,49 @@ fun DeckListScreen(
                             }
                         }
                     }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        if (deckLimitReached) {
+                            showLimitError = true
+                        } else {
+                            showAddDeckDialog = true
+                            newDeckName = ""
+                        }
+                    },
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding( vertical = 28.dp, horizontal = 24.dp ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy( 8.dp )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Create New Deck"
+                        )
+                        Text(
+                            text = "Create New Deck",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                    Spacer( modifier = Modifier.height( 8.dp ) )
+                    Text(
+                        text = "You can have up to 10 decks",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
         }

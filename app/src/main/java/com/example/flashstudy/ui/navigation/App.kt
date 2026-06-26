@@ -8,6 +8,7 @@ import com.example.flashstudy.data.FakeFlashcardRepository
 import com.example.flashstudy.ui.screen.DeckListScreen
 import com.example.flashstudy.ui.screen.DeckScreen
 import com.example.flashstudy.ui.screen.StudyScreen
+import com.example.flashstudy.ui.screen.SettingsScreen
 
 fun MutableList<Screen>.popToRoot() {
     while ( size > 1 ) {
@@ -30,11 +31,19 @@ fun App() {
         Screen.DeckList -> {
             DeckListScreen(
                 repository = repository,
+                flashcardRepository = flashcardRepository,
                 onDeckClick = { id ->
                     backStack.add( Screen.Deck( id ))
                 },
                 onAddDeck = {
                     repository.addDeck( "New Deck" )
+                },
+                onStudyClick = { id ->
+                    backStack.add( Screen.Deck( id ) )
+                    backStack.add( Screen.Study( id ) )
+                },
+                onSettingsClick = {
+                    backStack.add( Screen.Settings )
                 }
             )
         }
@@ -62,6 +71,13 @@ fun App() {
                 },
                 onHome = {
                     backStack.popToRoot()
+                }
+            )
+        }
+        Screen.Settings -> {
+            SettingsScreen(
+                onBack = {
+                    backStack.safePop()
                 }
             )
         }
