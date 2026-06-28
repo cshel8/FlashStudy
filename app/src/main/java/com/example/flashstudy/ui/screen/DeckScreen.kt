@@ -1,5 +1,7 @@
 package com.example.flashstudy.ui.screen
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,18 +20,23 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.flashstudy.data.DeckRepository
-import com.example.flashstudy.data.FakeFlashcardRepository
+import kotlinx.coroutines.launch
+import com.example.flashstudy.data.repository.DeckRepository
+import com.example.flashstudy.data.repository.FlashcardRepository
 import com.example.flashstudy.ui.components.ConfirmDeleteDialog
 import com.example.flashstudy.ui.components.LimitCounter
 import com.example.flashstudy.ui.components.LimitDialog
@@ -38,12 +45,17 @@ import com.example.flashstudy.ui.components.LimitDialog
 fun DeckScreen(
     deckId: Int,
     repository: DeckRepository,
-    flashcardRepository: FakeFlashcardRepository,
+    flashcardRepository: FlashcardRepository,
     onStartStudy: () -> Unit,
     onBack: () -> Unit
 ) {
-    val deck = repository.getDeckById(deckId)
-    val cards = flashcardRepository.getCardsForDeck( deckId )
+    val deck by repository
+        .getDeckById( deckId )
+        .collectAsState( initial = null )
+    val cards by flashcardRepository
+        .getCardsForDeck( deckId )
+        .collectAsState( initial = emptyList() )
+    val scope = rememberCoroutineScope()
     val cardLimitReached = cards.size >= 25
     var showAddCardDialog by remember { mutableStateOf( false )}
     var newQuestion by remember { mutableStateOf( "")}
@@ -72,9 +84,10 @@ fun DeckScreen(
                 modifier = Modifier.align( Alignment.Center ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (deck != null) {
+                val currentDeck = deck
+                if (currentDeck != null) {
                     Text(
-                        text = deck.name
+                        text = currentDeck.name
                     )
                     LimitCounter(
                         current = cards.size,
@@ -84,21 +97,6 @@ fun DeckScreen(
                 } else {
                     Text("Deck not found")
                 }
-            }
-            IconButton(
-                onClick = {
-                    if ( cardLimitReached ) {
-                        showLimitError = true
-                    } else {
-                        showAddCardDialog = true
-                    }
-                },
-                modifier = Modifier.align(Alignment.CenterEnd)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Flashcard"
-                )
             }
         }
 
@@ -158,6 +156,48 @@ fun DeckScreen(
                     }
                 }
             }
+        Spacer( modifier = Modifier.height( 16.dp ) )
+        OutlinedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    if ( cardLimitReached ) {
+                        showLimitError = true
+                    } else {
+                        showAddCardDialog = true
+                    }
+                },
+            border = BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding( vertical = 28.dp ),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy( 8.dp ),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Flashcard"
+                    )
+                    Text(
+                        "Create New Flashcard",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+                Spacer( Modifier.height( 8.dp ) )
+                Text(
+                    text = "You can have up to 25 flashcards",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
@@ -192,16 +232,23 @@ fun DeckScreen(
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    flashcardRepository.addCard(
-                        deckId,
-                        newQuestion,
-                        newAnswer
-                    )
-                    newQuestion = ""
-                    newAnswer = ""
-                    showAddCardDialog = false
-                }) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val success = flashcardRepository.addCard(
+                                deckId,
+                                newQuestion,
+                                newAnswer
+                            )
+                            if (!success) {
+                                showLimitError = true
+                            }
+                            newQuestion = ""
+                            newAnswer = ""
+                            showAddCardDialog = false
+                        }
+                    }
+                ) {
                     Text( "Create" )
                 }
             },
@@ -241,12 +288,14 @@ fun DeckScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        flashcardRepository.updateCard(
-                            editingCardId!!,
-                            editQuestion,
-                            editAnswer
-                        )
-                        editingCardId = null
+                        scope.launch {
+                            flashcardRepository.updateCard(
+                                editingCardId!!,
+                                editQuestion,
+                                editAnswer
+                            )
+                            editingCardId = null
+                        }
                     }
                 ) {
                     Text( "Save" )
@@ -271,8 +320,10 @@ fun DeckScreen(
                 deletingCardId = null
             },
             onConfirm = {
-                flashcardRepository.deleteCard( deletingCardId!! )
-                deletingCardId = null
+                scope.launch {
+                    flashcardRepository.deleteCard(deletingCardId!!)
+                    deletingCardId = null
+                }
             }
         )
     }

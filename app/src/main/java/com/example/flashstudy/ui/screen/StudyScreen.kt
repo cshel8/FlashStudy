@@ -28,25 +28,40 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.flashstudy.data.FakeFlashcardRepository
+import com.example.flashstudy.data.repository.FlashcardRepository
 import com.example.flashstudy.ui.model.CardSide
 
 @Composable
 fun StudyScreen(
     deckId: Int,
     deckName: String,
-    flashcardRepository: FakeFlashcardRepository,
+    flashcardRepository: FlashcardRepository,
+    shuffleCards: Boolean,
     onBack: () -> Unit,
     onHome: () -> Unit
 ) {
-    val cards = flashcardRepository.getCardsForDeck( deckId )
-    val hasCards = cards.isNotEmpty()
+    val cards by flashcardRepository
+        .getCardsForDeck( deckId )
+        .collectAsState( initial = emptyList() )
     var index by remember { mutableStateOf( 0 ) }
     var currentSide by remember {
         mutableStateOf( CardSide.QUESTION)
     }
     var slideDirection by remember { mutableStateOf( 1 ) }
     var pendingIndex by remember { mutableStateOf<Int?>( null )}
+    var studyCards by remember { mutableStateOf( cards ) }
+    LaunchedEffect( cards, shuffleCards, deckId ) {
+        studyCards =
+            if ( shuffleCards ) {
+                cards.shuffled()
+            } else {
+                cards
+            }
+        index = 0
+        currentSide = CardSide.QUESTION
+        pendingIndex = null
+    }
+    val hasCards = studyCards.isNotEmpty()
     val rotation by animateFloatAsState(
         targetValue =
             if ( currentSide == CardSide.ANSWER ) 180f
@@ -119,7 +134,7 @@ fun StudyScreen(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Card ${index + 1} of ${cards.size}")
+                    Text("Card ${index + 1} of ${studyCards.size}")
                     AnimatedContent(
                         targetState = index,
                         transitionSpec = {
@@ -133,7 +148,7 @@ fun StudyScreen(
                         },
                         label = "cardTransition"
                     ) { currentIndex ->
-                        val currentCard = cards[currentIndex]
+                        val currentCard = studyCards[ currentIndex ]
                         Card(
                             modifier = Modifier
                                 .padding(16.dp)
@@ -198,7 +213,7 @@ fun StudyScreen(
                         onClick = {
                             slideDirection = -1
                             val newIndex =
-                                if ( index > 0 ) index - 1 else cards.lastIndex
+                                if ( index > 0 ) index - 1 else studyCards.lastIndex
                             if ( currentSide == CardSide.ANSWER ) {
                                 currentSide = CardSide.QUESTION
                                 pendingIndex = newIndex
@@ -213,7 +228,7 @@ fun StudyScreen(
                         onClick = {
                             slideDirection = 1
                             val newIndex =
-                                if ( index < cards.lastIndex ) index + 1 else 0
+                                if ( index < studyCards.lastIndex ) index + 1 else 0
                             if ( currentSide == CardSide.ANSWER ) {
                                 currentSide = CardSide.QUESTION
                                 pendingIndex = newIndex
