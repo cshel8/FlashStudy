@@ -3,8 +3,17 @@ package com.example.flashstudy.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import com.example.flashstudy.data.FakeDeckRepository
-import com.example.flashstudy.data.FakeFlashcardRepository
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+import com.example.flashstudy.data.local.DatabaseProvider
+import com.example.flashstudy.data.local.RoomDeckRepository
+import com.example.flashstudy.data.local.RoomFlashcardRepository
+import com.example.flashstudy.data.settings.UserSettingsRepository
 import com.example.flashstudy.ui.screen.DeckListScreen
 import com.example.flashstudy.ui.screen.DeckScreen
 import com.example.flashstudy.ui.screen.StudyScreen
@@ -23,8 +32,24 @@ fun MutableList<Screen>.safePop() {
 
 @Composable
 fun App() {
-    val repository = remember { FakeDeckRepository() }
-    val flashcardRepository = remember { FakeFlashcardRepository() }
+    val context = LocalContext.current
+
+    val database = remember {
+        DatabaseProvider.getDatabase( context )
+    }
+    val repository = remember {
+        RoomDeckRepository( database.deckDao() )
+    }
+    val flashcardRepository = remember {
+        RoomFlashcardRepository( database.flashcardDao() )
+    }
+    val settingsRepository = remember {
+        UserSettingsRepository( context )
+    }
+    val scope = rememberCoroutineScope()
+    val shuffleCards by settingsRepository
+        .shuffleCards
+        .collectAsState( initial = false )
     val backStack = remember {
         mutableStateListOf< Screen >( Screen.DeckList ) }
     when ( val screen = backStack.last() ) {
@@ -34,9 +59,6 @@ fun App() {
                 flashcardRepository = flashcardRepository,
                 onDeckClick = { id ->
                     backStack.add( Screen.Deck( id ))
-                },
-                onAddDeck = {
-                    repository.addDeck( "New Deck" )
                 },
                 onStudyClick = { id ->
                     backStack.add( Screen.Deck( id ) )
@@ -61,11 +83,14 @@ fun App() {
             )
         }
         is Screen.Study -> {
-            val deck = repository.getDeckById( screen.deckId )
+            val deck by repository
+                .getDeckById( screen.deckId )
+                .collectAsState( initial = null )
             StudyScreen(
                 deckId = screen.deckId,
                 deckName = deck?.name ?: "Unknown Deck",
                 flashcardRepository = flashcardRepository,
+                shuffleCards = shuffleCards,
                 onBack = {
                     backStack.safePop()
                 },
@@ -76,6 +101,12 @@ fun App() {
         }
         Screen.Settings -> {
             SettingsScreen(
+                shuffleCards = shuffleCards,
+                onShuffleChange = { enabled ->
+                    scope.launch {
+                        settingsRepository.setShuffleCards(enabled)
+                    }
+                },
                 onBack = {
                     backStack.safePop()
                 }
