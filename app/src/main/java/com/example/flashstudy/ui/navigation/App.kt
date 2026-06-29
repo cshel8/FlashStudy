@@ -31,7 +31,9 @@ fun MutableList<Screen>.safePop() {
 }
 
 @Composable
-fun App() {
+fun App(
+    settingsRepository: UserSettingsRepository
+) {
     val context = LocalContext.current
 
     val database = remember {
@@ -43,12 +45,15 @@ fun App() {
     val flashcardRepository = remember {
         RoomFlashcardRepository( database.flashcardDao() )
     }
-    val settingsRepository = remember {
-        UserSettingsRepository( context )
-    }
     val scope = rememberCoroutineScope()
     val shuffleCards by settingsRepository
         .shuffleCards
+        .collectAsState( initial = false )
+    val darkTheme by settingsRepository
+        .darkTheme
+        .collectAsState( initial = false )
+    val colorblindAssist by settingsRepository
+        .colorBlindAssist
         .collectAsState( initial = false )
     val backStack = remember {
         mutableStateListOf< Screen >( Screen.DeckList ) }
@@ -102,9 +107,21 @@ fun App() {
         Screen.Settings -> {
             SettingsScreen(
                 shuffleCards = shuffleCards,
+                darkTheme = darkTheme,
+                colorblindAssist = colorblindAssist,
                 onShuffleChange = { enabled ->
                     scope.launch {
-                        settingsRepository.setShuffleCards(enabled)
+                        settingsRepository.setShuffleCards( enabled )
+                    }
+                },
+                onDarkThemeChange = { enabled ->
+                    scope.launch {
+                        settingsRepository.setDarkTheme( enabled )
+                    }
+                },
+                onColorblindAssistChange = { enabled ->
+                    scope.launch {
+                        settingsRepository.setColorblindAssist( enabled )
                     }
                 },
                 onBack = {

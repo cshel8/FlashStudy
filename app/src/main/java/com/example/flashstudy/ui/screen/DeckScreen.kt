@@ -20,6 +20,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
@@ -65,6 +67,7 @@ fun DeckScreen(
     var editAnswer by remember { mutableStateOf( "" )}
     var deletingCardId by remember { mutableStateOf<Int?>( null )}
     var showLimitError by remember { mutableStateOf( false ) }
+    var showValidationError by remember { mutableStateOf( false ) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -128,7 +131,7 @@ fun DeckScreen(
                                     Text( text = card.answer )
                                 }
                                 Row {
-                                    IconButton(
+                                    FilledTonalIconButton(
                                         onClick = {
                                             editingCardId = card.id
                                             editQuestion = card.question
@@ -140,7 +143,7 @@ fun DeckScreen(
                                             contentDescription = "Edit Card"
                                         )
                                     }
-                                    IconButton(
+                                    FilledIconButton(
                                         onClick = {
                                             deletingCardId = card.id
                                         }
@@ -164,6 +167,8 @@ fun DeckScreen(
                     if ( cardLimitReached ) {
                         showLimitError = true
                     } else {
+                        newQuestion = ""
+                        newAnswer = ""
                         showAddCardDialog = true
                     }
                 },
@@ -221,19 +226,41 @@ fun DeckScreen(
                 ) {
                     TextField(
                         value = newQuestion,
-                        onValueChange = { newQuestion = it },
-                        label = { Text( "Question" )}
+                        onValueChange = {
+                            newQuestion = it
+                            showValidationError = false
+                        },
+                        label = { Text( "Question" ) },
+                        isError = showValidationError && newQuestion.isBlank(),
+                        supportingText = {
+                            if ( showValidationError && newQuestion.isBlank()) {
+                                Text( "Question is required" )
+                            }
+                        }
                     )
                     TextField(
                         value = newAnswer,
-                        onValueChange = { newAnswer = it },
-                        label = { Text( "Answer" )}
+                        onValueChange = {
+                            newAnswer = it
+                            showValidationError = false
+                        },
+                        label = { Text( "Answer" ) },
+                        isError = showValidationError && newAnswer.isBlank(),
+                        supportingText = {
+                            if ( showValidationError && newAnswer.isBlank() ) {
+                                Text( "Answer is required" )
+                            }
+                        }
                     )
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
+                        if (newQuestion.trim().isEmpty() || newAnswer.trim().isEmpty()) {
+                            showValidationError = true
+                            return@Button
+                        }
                         scope.launch {
                             val success = flashcardRepository.addCard(
                                 deckId,
@@ -254,6 +281,9 @@ fun DeckScreen(
             },
             dismissButton = {
                 Button(onClick = {
+                    newQuestion = ""
+                    newAnswer = ""
+                    showValidationError = false
                     showAddCardDialog = false
                 }) {
                     Text( "Cancel" )

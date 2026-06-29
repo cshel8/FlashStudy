@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +66,7 @@ fun DeckListScreen(
     var showAddDeckDialog by remember { mutableStateOf(false) }
     var newDeckName by remember { mutableStateOf("") }
     var showLimitError by remember { mutableStateOf(false) }
+    var showValidationError by remember { mutableStateOf( false ) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -171,7 +174,7 @@ fun DeckListScreen(
                             }
                         }
                         Row {
-                            IconButton(
+                            FilledTonalIconButton(
                                 onClick = {
                                     editingDeckId = deck.id
                                     editDeckName = deck.name
@@ -182,7 +185,7 @@ fun DeckListScreen(
                                     contentDescription = "Edit Deck"
                                 )
                             }
-                            IconButton(
+                            FilledIconButton(
                                 onClick = {
                                     deletingDeckId = deck.id
                                 }
@@ -206,6 +209,7 @@ fun DeckListScreen(
                             } else {
                                 showAddDeckDialog = true
                                 newDeckName = ""
+                                showValidationError = false
                             }
                         },
                     border = BorderStroke(
@@ -252,21 +256,33 @@ fun DeckListScreen(
                 text = {
                     TextField(
                         value = newDeckName,
-                        onValueChange = { newDeckName = it },
-                        label = { Text("Deck Name") }
+                        onValueChange = {
+                            newDeckName = it
+                            showValidationError = false
+                        },
+                        label = { Text("Deck Name") },
+                        isError = showValidationError && newDeckName.trim().isEmpty(),
+                        supportingText = {
+                            if ( showValidationError && newDeckName.trim().isEmpty() ) {
+                                Text( "Deck name is required" )
+                            }
+                        }
                     )
                 },
                 confirmButton = {
                     Button(onClick = {
-                        if (newDeckName.isNotBlank()) {
-                            scope.launch {
-                                val success = repository.addDeck(newDeckName)
-                                if (!success) {
-                                    showLimitError = true
-                                }
-                                newDeckName = ""
-                                showAddDeckDialog = false
+                        if (newDeckName.trim().isEmpty() ) {
+                            showValidationError = true
+                            return@Button
+                        }
+                        scope.launch {
+                            val success = repository.addDeck(newDeckName)
+                            if (!success) {
+                                showLimitError = true
                             }
+                            newDeckName = ""
+                            showValidationError = false
+                            showAddDeckDialog = false
                         }
                     }
                     ) {
@@ -277,6 +293,7 @@ fun DeckListScreen(
                     Button(onClick = {
                         showAddDeckDialog = false
                         newDeckName = ""
+                        showValidationError = false
                     }) {
                         Text("Cancel")
                     }

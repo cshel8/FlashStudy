@@ -23,4 +23,24 @@ class UserSettingsRepository(
             preferences[ shuffleCardsKey ] = enabled
         }
     }
+    private val darkThemeKey = booleanPreferencesKey( "dark_theme" )
+    val darkTheme: Flow<Boolean> =
+        context.dataStore.data.map { preferences ->
+            preferences[ darkThemeKey ] ?: false
+        }
+    suspend fun setDarkTheme( enabled: Boolean ) {
+        context.dataStore.edit { preferences ->
+            preferences[ darkThemeKey ] = enabled
+        }
+    }
+    private val colorBlindAssistKey = booleanPreferencesKey( "colorblind_assist" )
+    val colorBlindAssist: Flow<Boolean> =
+        context.dataStore.data.map { preferences ->
+            preferences[ colorBlindAssistKey ] ?: false
+        }
+    suspend fun setColorblindAssist( enabled: Boolean ) {
+        context.dataStore.edit { preferences ->
+            preferences[ colorBlindAssistKey ] = enabled
+        }
+    }
 }

@@ -44,6 +44,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.material3)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation("androidx.datastore:datastore-preferences:1.1.1")
