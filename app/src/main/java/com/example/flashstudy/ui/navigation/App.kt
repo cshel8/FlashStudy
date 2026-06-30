@@ -5,9 +5,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import com.example.flashstudy.data.local.DatabaseProvider
@@ -18,6 +16,8 @@ import com.example.flashstudy.ui.screen.DeckListScreen
 import com.example.flashstudy.ui.screen.DeckScreen
 import com.example.flashstudy.ui.screen.StudyScreen
 import com.example.flashstudy.ui.screen.SettingsScreen
+import com.example.flashstudy.ui.screen.LoginScreen
+import com.google.firebase.auth.FirebaseAuth
 
 fun MutableList<Screen>.popToRoot() {
     while ( size > 1 ) {
@@ -57,6 +57,9 @@ fun App(
         .collectAsState( initial = false )
     val backStack = remember {
         mutableStateListOf< Screen >( Screen.DeckList ) }
+    val auth = remember {
+        FirebaseAuth.getInstance()
+    }
     when ( val screen = backStack.last() ) {
         Screen.DeckList -> {
             DeckListScreen(
@@ -123,6 +126,35 @@ fun App(
                     scope.launch {
                         settingsRepository.setColorblindAssist( enabled )
                     }
+                },
+                onLoginClick = {
+                    backStack.add( Screen.Login )
+                },
+                onBack = {
+                    backStack.safePop()
+                }
+            )
+        }
+        Screen.Login -> {
+            LoginScreen(
+                onLoginClick = { email, password ->
+                    auth.signInWithEmailAndPassword( email, password )
+                        .addOnSuccessListener {
+                            backStack.safePop()
+                        }
+                        .addOnFailureListener { error ->
+                            println( "Login failed: ${error.message}")
+                        }
+                },
+                onSignUpClick = { email, password ->
+                    auth.createUserWithEmailAndPassword( email, password )
+                        .addOnSuccessListener {
+                            backStack.safePop()
+                        }
+                        .addOnFailureListener { error ->
+                            println( "Sign up failed: ${ error.message }")
+
+                        }
                 },
                 onBack = {
                     backStack.safePop()
