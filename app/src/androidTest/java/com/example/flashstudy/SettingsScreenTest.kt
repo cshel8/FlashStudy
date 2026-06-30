@@ -24,7 +24,8 @@ class SettingsScreenTest {
                     onShuffleChange = {},
                     onDarkThemeChange = {},
                     onColorblindAssistChange = {},
-                    onBack = {}
+                    onBack = {},
+                    onLoginClick = {}
                 )
             }
         }

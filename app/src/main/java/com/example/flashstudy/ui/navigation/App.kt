@@ -137,7 +137,10 @@ fun App(
         }
         Screen.Login -> {
             LoginScreen(
-                onLoginClick = { email, password ->
+                onLoginClick = login@{ email, password ->
+                    if ( email.isBlank() || password.isBlank() ) {
+                        return@login
+                    }
                     auth.signInWithEmailAndPassword( email, password )
                         .addOnSuccessListener {
                             backStack.safePop()
@@ -146,7 +149,10 @@ fun App(
                             println( "Login failed: ${error.message}")
                         }
                 },
-                onSignUpClick = { email, password ->
+                onSignUpClick = signUp@{ email, password ->
+                    if ( email.isBlank() || password.isBlank() ) {
+                        return@signUp
+                    }
                     auth.createUserWithEmailAndPassword( email, password )
                         .addOnSuccessListener {
                             backStack.safePop()
