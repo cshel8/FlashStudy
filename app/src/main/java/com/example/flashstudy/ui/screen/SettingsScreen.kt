@@ -29,7 +29,8 @@ fun SettingsScreen(
     onShuffleChange: ( Boolean ) -> Unit,
     onDarkThemeChange: ( Boolean ) -> Unit,
     onColorblindAssistChange: ( Boolean ) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onLoginClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -130,7 +131,24 @@ fun SettingsScreen(
                 text = "Account",
                 style = MaterialTheme.typography.titleMedium
             )
-            Text( "Sign in / Cloud sync" )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text( "Cloud Sync" )
+                    Text(
+                        text = "Sign in to back up your decks",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Button(
+                    onClick = onLoginClick
+                ) {
+                    Text("Sign In")
+                }
+            }
         }
     }
 }

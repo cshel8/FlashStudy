@@ -90,7 +90,8 @@ fun DeckListScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings"
+                        contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -103,7 +104,8 @@ fun DeckListScreen(
                 Icon(
                     imageVector = Icons.Default.Layers,
                     contentDescription = "Decks",
-                    modifier = Modifier.padding(end = 16.dp)
+                    modifier = Modifier.padding(end = 16.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 Column {
                     Text(
